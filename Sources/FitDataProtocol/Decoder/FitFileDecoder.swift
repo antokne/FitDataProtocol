@@ -72,6 +72,7 @@ public struct FitFileDecoder {
                                          WeatherConditionsMessage.self,
                                          WeatherAlertMessage.self,
                                          CadenceZoneMessage.self,
+										 SegmentLapMessage.self,
                                          SegmentLeaderboardEntryMessage.self,
                                          SegmentPointMessage.self,
                                          WorkoutSessionMessage.self,
@@ -154,9 +155,14 @@ public struct FitFileDecoder {
                 var hasMessageDecoder = false
                 var messageType: FitMessage!
                 var currentGlobalMessage: UInt16!
+				
+				// make sure this definition exists before continuing.
+				guard let currentDef = definitionDict[header.localMessageType] else {
+					continue
+				}
 
                 if let message = messages.filter({
-                    $0.globalMessageNumber() == definitionDict[header.localMessageType]!.globalMessageNumber
+                    $0.globalMessageNumber() == currentDef.globalMessageNumber
                 }).first {
                     hasMessageDecoder = true
                     messageType = message.init()
@@ -164,14 +170,14 @@ public struct FitFileDecoder {
                 }
                                 
                 var fieldSize: Int = 0
-                for msg in definitionDict[header.localMessageType]!.fieldDefinitions {
+                for msg in currentDef.fieldDefinitions {
                     fieldSize = fieldSize + Int(msg.size)
                 }
 
                 let stdData = decoder.decodeData(messageData, length: fieldSize)
 
                 var devSize: Int = 0
-                for msg in definitionDict[header.localMessageType]!.developerFieldDefinitions {
+                for msg in currentDef.developerFieldDefinitions {
                     devSize = devSize + Int(msg.size)
                 }
 
@@ -180,7 +186,8 @@ public struct FitFileDecoder {
                 let fieldData = FieldData(fieldData: stdData, developerFieldData: devData)
 
                 if hasMessageDecoder == true {
-                    let fieldDescriptions = self.fieldDescription.compactMap { $0.messageNumber == currentGlobalMessage ? $0 : nil }
+					// If message number is nil then this dev field maybe used on any message son include it in list of fields descriptions.
+                    let fieldDescriptions = self.fieldDescription.compactMap { $0.messageNumber == nil || $0.messageNumber == currentGlobalMessage ? $0 : nil }
                                     
                     let result = messageType.decode(fieldData: fieldData,
                                                     definition: definitionDict[header.localMessageType]!)
