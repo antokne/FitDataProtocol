@@ -183,6 +183,11 @@ internal extension FieldDescriptionMessage {
             var decoder = DecodeData()
             
             guard developerData.data.isValidForBaseType(baseInfo.type) else { return nil }
+			
+			// If we do not match the sizes then we possibly need to decode an array of data.
+			if baseInfo.type.size != -1, developerData.data.count / baseInfo.type.size > 1 {
+				return decodeArrayDeveloperDataType(developerData: developerData, baseInfo: baseInfo)
+			}
             
             switch baseInfo.type {
             case .enumtype, .uint8, .uint8z, .byte:
@@ -264,4 +269,81 @@ internal extension FieldDescriptionMessage {
         }
         return nil
     }
+}
+
+
+internal extension FieldDescriptionMessage {
+	
+	// decode developer data for arrays...
+	func decodeArrayDeveloperDataType(developerData: DeveloperDataType, baseInfo: BaseTypeData) -> DeveloperDataBox? {
+		
+		let data = developerData.data
+
+		switch baseInfo.type {
+		case .enumtype, .uint8, .uint8z, .byte:
+			var uInt8Array: [UInt8] = []
+			for byte in developerData.data {
+				let value = UInt8(byte)
+				uInt8Array.append(value)
+			}
+			return DeveloperDataValue(fieldName: self.fieldName, units: self.units, value: uInt8Array)
+		case .sint8:
+			break
+		case .sint16:
+			
+			var sInt16Array: [Int16] = []
+			for i in stride(from: 0, to: developerData.data.count - 1, by: 2) {
+				
+				var sint16Data = Data()
+				switch developerData.architecture {
+				case .little:
+					sint16Data.append(data[i+1])
+					sint16Data.append(data[i])
+				case .big:
+					sint16Data.append(data[i])
+					sint16Data.append(data[i+1])
+				}
+
+				guard var value = Int16(exactly: sint16Data.decimalValue()) else {
+					continue
+				}
+				
+				value = developerData.architecture == .little ? value.littleEndian : value.bigEndian
+				
+				sInt16Array.append(value)
+			}
+			return DeveloperDataValue(fieldName: self.fieldName, units: self.units, value: sInt16Array)
+
+		case .uint16, .uint16z:
+			break
+		case .sint32:
+			break
+		case .uint32, .uint32z:
+			break
+		case .string:
+			break
+		case .float32:
+			break
+		case .float64:
+			break
+		case .sint64:
+			break
+		case .uint64, .uint64z:
+			break
+		case .unknown:
+			break
+		}
+		
+		return nil
+	}
+}
+
+extension Data {
+	
+	public func decimalValue() -> Int {
+		let decimalValue = self.reduce(0) { v, byte in
+			return v << 8 | Int(byte)
+		}
+		return decimalValue
+	}
 }

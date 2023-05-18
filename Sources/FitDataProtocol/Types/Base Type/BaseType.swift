@@ -75,6 +75,37 @@ public enum BaseType: UInt8 {
 
     /// Unknown
     case unknown        = 255
+	
+	var size: Int {
+		switch self {
+		case .enumtype:
+			return -1
+		case .sint8, .byte:
+			return MemoryLayout<Int8>.size
+		case .uint8, .uint8z:
+			return MemoryLayout<UInt8>.size
+		case .sint16:
+			return MemoryLayout<Int16>.size
+		case .uint16, .uint16z:
+			return MemoryLayout<UInt16>.size
+		case .sint32:
+			return MemoryLayout<Int32>.size
+		case .uint32, .uint32z:
+			return MemoryLayout<UInt32>.size
+		case .string:
+			return -1
+		case .float32:
+			return MemoryLayout<Float32>.size
+		case .float64:
+			return MemoryLayout<Float64>.size
+		case .sint64:
+			return MemoryLayout<Int64>.size
+		case .uint64, .uint64z:
+			return MemoryLayout<UInt64>.size
+		case .unknown:
+			return -1
+		}
+	}
 }
 
 extension BaseType: FitFieldCodeable {
