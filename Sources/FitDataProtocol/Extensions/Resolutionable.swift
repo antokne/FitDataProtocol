@@ -31,6 +31,11 @@ public struct Resolution {
 
     // Offset
     var offset: Double
+	
+	public init(scale: Double, offset: Double) {
+		self.scale = scale
+		self.offset = offset
+	}
 }
 
 /// Direction of the Resolution
