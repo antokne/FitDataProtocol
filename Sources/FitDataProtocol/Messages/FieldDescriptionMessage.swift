@@ -168,6 +168,44 @@ open class FieldDescriptionMessage: FitMessage {
         
         return .success(msg as! F)
     }
+	
+	/// Encodes the Definition Message for FitMessage
+	///
+	/// - Parameters:
+	///   - fileType: FileType
+	///   - dataValidityStrategy: Validity Strategy
+	/// - Returns: DefinitionMessage Result
+	internal override func encodeDefinitionMessage(fileType: FileType?, dataValidityStrategy: FitFileEncoder.ValidityStrategy) -> Result<DefinitionMessage, FitEncodingError> {
+		
+		let fields = self.fieldDict.sorted { $0.key < $1.key }.map { $0.value }
+
+		guard fields.isEmpty == false else {
+			return.failure(self.encodeNoPropertiesAvailable())
+		}
+		
+		let defMessage = DefinitionMessage(architecture: .little,
+										   globalMessageNumber: Self.globalMessageNumber(),
+										   fields: UInt8(fields.count),
+										   fieldDefinitions: fields,
+										   developerFieldDefinitions: devFieldDefinitions)
+		
+		return.success(defMessage)
+	}
+	
+	/// Encodes the Message into Data
+	///
+	/// - Parameters:
+	///   - localMessageType: Message Number, that matches the defintions header number
+	///   - definition: DefinitionMessage
+	/// - Returns: Data Result
+	internal override func encode(localMessageType: UInt8, definition: DefinitionMessage) -> Result<Data, FitEncodingError> {
+		
+		guard definition.globalMessageNumber == type(of: self).globalMessageNumber() else  {
+			return.failure(self.encodeWrongDefinitionMessage())
+		}
+		
+		return self.encodeMessageFields(localMessageType: localMessageType)
+	}
 }
 
 internal extension FieldDescriptionMessage {
