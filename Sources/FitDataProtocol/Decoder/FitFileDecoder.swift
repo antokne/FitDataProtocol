@@ -186,7 +186,7 @@ public struct FitFileDecoder {
                 let fieldData = FieldData(fieldData: stdData, developerFieldData: devData)
 
                 if hasMessageDecoder == true {
-					// If message number is nil then this dev field maybe used on any message son include it in list of fields descriptions.
+					// If message number is nil then this dev field maybe used on any message so include it in list of fields descriptions.
                     let fieldDescriptions = self.fieldDescription.compactMap { $0.messageNumber == nil || $0.messageNumber == currentGlobalMessage ? $0 : nil }
                                     
                     let result = messageType.decode(fieldData: fieldData,
