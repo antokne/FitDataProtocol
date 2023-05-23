@@ -82,6 +82,14 @@ internal struct DeveloperFieldDefinition {
 
 internal extension DeveloperFieldDefinition {
 
+	func encode() -> Data {
+		var devData = Data()
+		devData.append(fieldNumber)
+		devData.append(size)
+		devData.append(dataIndex)
+		return devData
+	}
+	
     static func decode(decoder: inout DecodeData, data: Data) -> Result<DeveloperFieldDefinition, FitDecodingError>  {
 
         let fieldNumber = decoder.decodeUInt8(data)
