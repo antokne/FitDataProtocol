@@ -31,7 +31,12 @@ public struct BaseTypeData {
     public var type: BaseType
 
     /// Resolution
-    public var resolution: Resolution = Resolution(scale: 1, offset: 0)
+    public var resolution: Resolution
+	
+	public init(type: BaseType, resolution: Resolution = Resolution(scale: 1, offset: 0)) {
+		self.type = type
+		self.resolution = resolution
+	}
 }
 
 /// FIT Base Type
