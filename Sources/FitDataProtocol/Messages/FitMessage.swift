@@ -50,6 +50,9 @@ open class FitMessage {
     internal var architecture: Endian = .little
     internal var developerData: [DeveloperDataType]?
     
+	/// For encoding we need to know the field definition
+	internal var devFieldDefinitions: [DeveloperFieldDefinition] = []
+	
     /// Developer Data Values
     internal(set) public var developerValues: [DeveloperDataBox] = [DeveloperDataBox]()
     

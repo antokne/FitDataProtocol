@@ -203,7 +203,7 @@ open class WorkoutStepMessage: FitMessage {
                                            globalMessageNumber: Self.globalMessageNumber(),
                                            fields: UInt8(fields.count),
                                            fieldDefinitions: fields,
-                                           developerFieldDefinitions: [DeveloperFieldDefinition]())
+                                           developerFieldDefinitions: devFieldDefinitions)
         
         return.success(defMessage)
     }
