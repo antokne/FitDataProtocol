@@ -88,6 +88,14 @@ internal extension DefinitionMessage {
         for fieldDef in fieldDefinitions {
             msgData.append(fieldDef.encode())
         }
+		
+		// Add developer data fields...
+		if developerFieldDefinitions.count > 0 {
+			msgData.append(UInt8(developerFieldDefinitions.count))
+			for devDefinition in developerFieldDefinitions {
+				msgData.append(devDefinition.encode())
+			}
+		}
 
         return msgData
     }
