@@ -47,6 +47,12 @@ public struct DeveloperDataValue: DeveloperDataBox {
 
     /// Value
     private(set) public var value: Any?
+	
+	public init(fieldName: String? = nil, units: String? = nil, value: Any? = nil) {
+		self.fieldName = fieldName
+		self.units = units
+		self.value = value
+	}
     
 }
 
