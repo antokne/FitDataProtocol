@@ -151,7 +151,7 @@ extension FitDataProtocolTests {
                                 activity: ActivityType.cycling,
                                 zone: 4)
         
-        let fiel = FileIdMessage(deviceSerialNumber: 22,
+        let fileIdMessage = FileIdMessage(deviceSerialNumber: 22,
                                  fileCreationDate: fTime,
                                  manufacturer: Manufacturer.northPoleEngineering,
                                  product: 22,
@@ -163,7 +163,7 @@ extension FitDataProtocolTests {
         
         var encodedData: Data!
         
-        let result = encoder.encode(fildIdMessage: fiel, messages: [act, rec])
+		let result = encoder.encode(fileIdMessage: fileIdMessage, messages: [act, rec])
         switch result {
         case .success(let data):
             print(data as NSData)

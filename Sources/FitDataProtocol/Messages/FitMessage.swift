@@ -124,6 +124,29 @@ internal extension FitMessage {
         
         return devDataTypes
     }
+	
+	// Endcode developer data into data
+	func encodeDeveloperData(fieldDescriptions: [FieldDescriptionMessage] ) -> Data {
+		
+		var devData = Data()
+				
+		for devFildDefinition in devFieldDefinitions {
+						
+			guard let fieldDescription = fieldDescriptions.first(where: { devFildDefinition.fieldNumber == $0.definitionNumber }) else {
+				print("No field description for this dev data skipping")
+				continue
+			}
+			
+			guard let devDataType = self.developerData?.first(where: { $0.fieldNumber == fieldDescription.definitionNumber }) else {
+				print("No developerData for this dev data skipping")
+				continue
+			}
+
+			devData.append(devDataType.data)
+		}
+		
+		return devData
+	}
 }
 
 internal extension FitMessage {
@@ -187,4 +210,41 @@ internal extension FitMessage {
     func preferredField<T>(preferred: Measurement<T>?, fallbakck: Measurement<T>?) -> Measurement<T>? {
         return preferred != nil ? preferred : fallbakck
     }
+}
+
+// MARK: - Add developer data to a fit message
+public extension FitMessage {
+	
+	/// Added a developer data value to this message
+	/// - Parameters:
+	///   - devData: the value of the dev data
+	///   - dataIndex: index of the developer.
+	///   - fieldNumber: the index of the field description to use for this data.
+	func addDeveloperData<T>(value: T, fieldDescription: FieldDescriptionMessage) -> Bool {
+		
+		guard let data = fieldDescription.encode(value: value) else {
+			return false
+		}
+		
+		guard let fieldNumber = fieldDescription.definitionNumber,
+			  let dataIndex = fieldDescription.dataIndex else {
+			return false
+		}
+		
+		if developerData == nil {
+			developerData = []
+		}
+		let developerDataType = DeveloperDataType(architecture: architecture,
+												  fieldNumber: fieldNumber,
+												  dataIndex: dataIndex,
+												  data: data)
+		developerData?.append(developerDataType)
+		
+		let devFieldDef = DeveloperFieldDefinition(fieldNumber: fieldNumber,
+												   size: UInt8(data.count),
+												   dataIndex: dataIndex)
+		devFieldDefinitions.append(devFieldDef)
+		
+		return true
+	}
 }

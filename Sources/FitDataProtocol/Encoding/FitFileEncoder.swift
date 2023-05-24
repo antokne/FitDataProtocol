@@ -56,24 +56,19 @@ public struct FitFileEncoder {
 }
 
 public extension FitFileEncoder {
-        
-    /// Encode FITFile
-    ///
-    /// - Parameters:
-    ///   - fildIdMessage: FileID Message
-    ///   - messages: Array of other FitMessages
-    /// - Returns: Data Result
-    func encode(fildIdMessage: FileIdMessage, messages: [FitMessage]) -> Result<Data, FitEncodingError> {
-
-        func encodeDefHeader(index: UInt8, definition: DefinitionMessage) -> Data {
-            var msgData = Data()
-
-            let defHeader = RecordHeader(localMessageType: index, isDataMessage: false)
-            msgData.append(defHeader.normalHeader)
-            msgData.append(definition.encode())
-
-            return msgData
-        }
+	
+	/// Encode FITFile
+	///
+	/// - Parameters:
+	///   - filedIdMessage: FileID Message
+	///   - messages: Array of other FitMessages
+	///   - developerDataIDs: Need a developer data messages with field decriptions.
+	///   - fieldDescriptions: list of developer field description messages to encode dev data with
+	/// - Returns: Data Result
+    func encode(fileIdMessage: FileIdMessage,
+				messages: [FitMessage],
+				developerDataIDs: [DeveloperDataIdMessage] = [],
+				fieldDescriptions: [FieldDescriptionMessage] = []) -> Result<Data, FitEncodingError> {
 
         guard messages.count > 0 else {
             return.failure(FitEncodingError.noMessages)
@@ -81,31 +76,43 @@ public extension FitFileEncoder {
 
         var msgData = Data()
 
-        let validator = EncoderValidator.validate(fildIdMessage: fildIdMessage, messages: messages, dataValidityStrategy: dataValidityStrategy)
+        let validator = EncoderValidator.validate(fildIdMessage: fileIdMessage, messages: messages, dataValidityStrategy: dataValidityStrategy)
         switch validator {
         case .success(_):
             break
         case .failure(let error):
             return.failure(error)
         }
-
-        var lastDefiniton: DefinitionMessage!
-        
-        switch fildIdMessage.encodeDefinitionMessage(fileType: fildIdMessage.fileType, dataValidityStrategy: dataValidityStrategy) {
-        case .success(let definition):
-            lastDefiniton = definition
-        case .failure(let error):
-            return.failure(error)
-        }
-        
-        msgData.append(encodeDefHeader(index: 0, definition: lastDefiniton))
-
-        switch fildIdMessage.encode(localMessageType: 0, definition: lastDefiniton) {
-        case .success(let data):
-            msgData.append(data)
-        case .failure(let error):
-            return.failure(error)
-        }
+		
+		// encode file id message
+		switch encodeDefintionAndMessage(message: fileIdMessage, fileType: fileIdMessage.fileType) {
+		case .success(let data):
+			msgData.append(data)
+		case .failure(let error):
+			return .failure(error)
+		}
+		
+		// encode develoepr data ids messages, if any.
+		for developerDataID in developerDataIDs {
+			switch encodeDefintionAndMessage(message: developerDataID, fileType: fileIdMessage.fileType) {
+			case .success(let data):
+				msgData.append(data)
+			case .failure(let error):
+				return .failure(error)
+			}
+		}
+		
+		// encode field Description messages, if any.
+		for fieldDescription in fieldDescriptions {
+			switch encodeDefintionAndMessage(message: fieldDescription, fileType: fileIdMessage.fileType) {
+			case .success(let data):
+				msgData.append(data)
+			case .failure(let error):
+				return .failure(error)
+			}
+		}
+		
+		var lastDefinition: DefinitionMessage!
 
         for message in messages {
 
@@ -114,12 +121,12 @@ public extension FitFileEncoder {
             }
 
             // Endocde the Definition
-            let def = message.encodeDefinitionMessage(fileType: fildIdMessage.fileType, dataValidityStrategy: dataValidityStrategy)
+            let def = message.encodeDefinitionMessage(fileType: fileIdMessage.fileType, dataValidityStrategy: dataValidityStrategy)
             switch def {
             case .success(let definition):
-                if lastDefiniton != definition {
-                    lastDefiniton = definition
-                    msgData.append(encodeDefHeader(index: 0, definition: lastDefiniton))
+                if lastDefinition != definition {
+                    lastDefinition = definition
+                    msgData.append(encodeDefHeader(index: 0, definition: lastDefinition))
                 }
                 
             case .failure(let error):
@@ -127,9 +134,13 @@ public extension FitFileEncoder {
             }
 
             // Endode the Message
-            switch message.encode(localMessageType: 0, definition: lastDefiniton) {
+            switch message.encode(localMessageType: 0, definition: lastDefinition) {
             case .success(let data):
                 msgData.append(data)
+				
+				// Encode the developer data fields if there are any for this message.
+				msgData.append(message.encodeDeveloperData(fieldDescriptions: fieldDescriptions))
+				
             case .failure(let error):
                 return.failure(error)
             }
@@ -150,5 +161,43 @@ public extension FitFileEncoder {
 
         return.success(fileData)
     }
+	
+	private func encodeDefintionAndMessage(message: FitMessage, fileType: FileType?) -> Result<Data, FitEncodingError> {
+		
+		var definitionMessage: DefinitionMessage?
+		
+		switch message.encodeDefinitionMessage(fileType: fileType, dataValidityStrategy: dataValidityStrategy) {
+		case .success(let definition):
+			definitionMessage = definition
+		case .failure(let error):
+			return.failure(error)
+		}
+		
+		guard let definitionMessage else {
+			return .failure(FitEncodingError.wrongDefinitionMessage("Unable to generate definition message for \(message)"))
+		}
+		
+		var msgData = Data()
+		msgData.append(encodeDefHeader(index: 0, definition: definitionMessage))
+		
+		switch message.encode(localMessageType: 0, definition: definitionMessage) {
+		case .success(let data):
+			msgData.append(data)
+		case .failure(let error):
+			return.failure(error)
+		}
+		return.success(msgData)
+	}
+	
+	private func encodeDefHeader(index: UInt8, definition: DefinitionMessage) -> Data {
+		var msgData = Data()
+		
+		let hasDeveloperData = definition.developerFieldDefinitions.count > 0
+		let defHeader = RecordHeader(localMessageType: index, isDataMessage: false, developerData: hasDeveloperData)
+		msgData.append(defHeader.normalHeader)
+		msgData.append(definition.encode())
+		
+		return msgData
+	}
 
 }

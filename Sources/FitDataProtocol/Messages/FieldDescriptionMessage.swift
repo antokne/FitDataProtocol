@@ -41,7 +41,7 @@ open class FieldDescriptionMessage: FitMessage {
               fieldNumber: 0)
     private(set) public var dataIndex: UInt8?
     
-    /// Developer Definition Number
+    /// Developer Field Definition Number
     @FitField(base: BaseTypeData(type: .uint8, resolution: Resolution(scale: 1.0, offset: 0.0)),
               fieldNumber: 1)
     private(set) public var definitionNumber: UInt8?
@@ -100,7 +100,7 @@ open class FieldDescriptionMessage: FitMessage {
               fieldNumber: 14)
     private(set) public var messageNumber: UInt16?
     
-    /// Field Number
+    /// The Native Field Number
     @FitField(base: BaseTypeData(type: .uint8, resolution: Resolution(scale: 1.0, offset: 0.0)),
               fieldNumber: 15)
     private(set) public var fieldNumber: UInt8?
@@ -316,11 +316,12 @@ internal extension FieldDescriptionMessage {
 	func decodeArrayDeveloperDataType(developerData: DeveloperDataType, baseInfo: BaseTypeData) -> DeveloperDataBox? {
 		
 		let data = developerData.data
+		var decoder = DecodeData()
 
 		switch baseInfo.type {
 		case .enumtype, .uint8, .uint8z, .byte:
 			var uInt8Array: [UInt8] = []
-			for byte in developerData.data {
+			for byte in data {
 				let value = UInt8(byte)
 				uInt8Array.append(value)
 			}
@@ -328,30 +329,12 @@ internal extension FieldDescriptionMessage {
 		case .sint8:
 			break
 		case .sint16:
-			
 			var sInt16Array: [Int16] = []
-			for i in stride(from: 0, to: developerData.data.count - 1, by: 2) {
-				
-				var sint16Data = Data()
-				switch developerData.architecture {
-				case .little:
-					sint16Data.append(data[i+1])
-					sint16Data.append(data[i])
-				case .big:
-					sint16Data.append(data[i])
-					sint16Data.append(data[i+1])
-				}
-
-				guard var value = Int16(exactly: sint16Data.decimalValue()) else {
-					continue
-				}
-				
-				value = developerData.architecture == .little ? value.littleEndian : value.bigEndian
-				
+			while decoder.index < data.count {
+				let value = decoder.decodeInt16(developerData.data)
 				sInt16Array.append(value)
 			}
 			return DeveloperDataValue(fieldName: self.fieldName, units: self.units, value: sInt16Array)
-
 		case .uint16, .uint16z:
 			break
 		case .sint32:
@@ -371,17 +354,82 @@ internal extension FieldDescriptionMessage {
 		case .unknown:
 			break
 		}
-		
 		return nil
 	}
 }
 
-extension Data {
+public extension FieldDescriptionMessage {
 	
-	public func decimalValue() -> Int {
-		let decimalValue = self.reduce(0) { v, byte in
-			return v << 8 | Int(byte)
+	func encode<T>(value: T) -> Data? {
+		
+		guard let baseInfo = self.baseInfo else {
+			return nil
 		}
-		return decimalValue
+				
+		let size = MemoryLayout.size(ofValue: value)
+		let count = size / baseInfo.type.size
+		
+		if count == 1 {
+			return dataForValue(value: value, type: baseInfo.type, architecture: architecture)
+		}
+		else {
+			return dataForArrayValue(value: value, type: baseInfo.type)
+		}
+	}
+	
+	// TODO: - Test the living daylights out of this
+	func dataForValue<T>(value: T, type: BaseType, architecture: Endian) -> Data? {
+		switch type {
+		case .enumtype, .uint8, .uint8z, .byte, .sint8:
+			return Data(from: value)
+		case .sint16, .uint16, .uint16z:
+			return Data.encode(value: value, architecture: architecture)
+		case .uint32, .uint32z, .sint32:
+			return Data.encode(value: value, architecture: architecture)
+		case .string:
+			return Data(from: value)
+		case .float32:
+			return Data(from: value)
+		case .float64:
+			return Data(from: value)
+		case .sint64, .uint64, .uint64z:
+			return Data.encode(value: value, architecture: architecture)
+		case .unknown:
+			return nil
+		}
+	}
+
+	// TODO: - Test the living daylights out of this
+	func dataForArrayValue<T>(value: T, type: BaseType) -> Data? {
+		var data = Data()
+		switch type {
+		case .enumtype, .uint8, .uint8z, .byte, .sint8:
+			if let array = value as? [UInt8] {
+				for uint8 in array {
+					data.append(Data(from: uint8))
+				}
+			}
+		case .sint16:
+			if let array = value as? [Int16] {
+				for int16 in array {
+					data.append(Data(from: int16))
+				}
+			}
+		case .uint16, .uint16z:
+			return Data.encode(value: value, architecture: architecture)
+		case .uint32, .uint32z, .sint32:
+			return Data.encode(value: value, architecture: architecture)
+		case .string:
+			return Data(from: value)
+		case .float32:
+			return Data(from: value)
+		case .float64:
+			return Data(from: value)
+		case .sint64, .uint64, .uint64z:
+			return Data.encode(value: value, architecture: architecture)
+		case .unknown:
+			return nil
+		}
+		return data
 	}
 }
