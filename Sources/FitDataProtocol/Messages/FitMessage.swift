@@ -130,9 +130,9 @@ internal extension FitMessage {
 		
 		var devData = Data()
 				
-		for devFildDefinition in devFieldDefinitions {
+		for devFieldDefinition in devFieldDefinitions {
 						
-			guard let fieldDescription = fieldDescriptions.first(where: { devFildDefinition.fieldNumber == $0.definitionNumber }) else {
+			guard let fieldDescription = fieldDescriptions.first(where: { devFieldDefinition.fieldNumber == $0.definitionNumber }) else {
 				print("No field description for this dev data skipping")
 				continue
 			}
@@ -220,6 +220,7 @@ public extension FitMessage {
 	///   - devData: the value of the dev data
 	///   - dataIndex: index of the developer.
 	///   - fieldNumber: the index of the field description to use for this data.
+	@discardableResult
 	func addDeveloperData<T>(value: T, fieldDescription: FieldDescriptionMessage) -> Bool {
 		
 		guard let data = fieldDescription.encode(value: value) else {
