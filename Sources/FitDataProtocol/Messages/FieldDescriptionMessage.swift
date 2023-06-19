@@ -365,25 +365,33 @@ public extension FieldDescriptionMessage {
 		guard let baseInfo = self.baseInfo else {
 			return nil
 		}
-				
-		let size = MemoryLayout.size(ofValue: value)
-		let count = size / baseInfo.type.size
 		
-		if count == 1 {
-			return dataForValue(value: value, type: baseInfo.type, architecture: architecture)
+		// Do we have an array>
+		if value as? Array<Any> != nil {
+			return dataForArrayValue(value: value, type: baseInfo.type)
 		}
 		else {
-			return dataForArrayValue(value: value, type: baseInfo.type)
+			return dataForValue(value: value, type: baseInfo.type, architecture: architecture)
 		}
 	}
 	
 	// TODO: - Test the living daylights out of this
 	func dataForValue<T>(value: T, type: BaseType, architecture: Endian) -> Data? {
 		switch type {
-		case .enumtype, .uint8, .uint8z, .byte, .sint8:
+		case .uint8:
+			if let value: UInt8 = value as? UInt8 {
+				return Data(from: value)
+			}
+		case .enumtype, .uint8z, .byte, .sint8:
 			return Data(from: value)
-		case .sint16, .uint16, .uint16z:
-			return Data.encode(value: value, architecture: architecture)
+		case .sint16, .uint16z:
+			if let value: Int16 = value as? Int16 {
+				return Data(from: value)
+			}
+		case .uint16:
+			if let value: UInt16 = value as? UInt16 {
+				return Data(from: value)
+			}
 		case .uint32, .uint32z, .sint32:
 			return Data.encode(value: value, architecture: architecture)
 		case .string:
@@ -397,6 +405,7 @@ public extension FieldDescriptionMessage {
 		case .unknown:
 			return nil
 		}
+		return nil
 	}
 
 	// TODO: - Test the living daylights out of this
