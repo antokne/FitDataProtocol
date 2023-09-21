@@ -52,7 +52,8 @@ final public class FitFieldTime: FieldWrapper {
                 
                 let value = FitTime.decode(data: data,
                                            base: base,
-                                           arch: owner?.architecture ?? .little)                
+                                           arch: owner?.architecture ?? .little,
+										   isLocal: local)
                 return value
             }
 
@@ -68,7 +69,7 @@ final public class FitFieldTime: FieldWrapper {
             
             if let value = newValue {
                 
-                let result = value.encode(isLocal: self.local)
+                let result = value.encode(isLocal: local)
                 if result.isValidForBaseType(base.type) {
                     owner?.fieldDataDict[self.fieldNumber] = result
                     let def = FieldDefinition(fieldDefinitionNumber: self.fieldNumber, type: self.base)
