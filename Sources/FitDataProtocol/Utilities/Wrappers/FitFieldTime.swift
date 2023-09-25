@@ -53,7 +53,7 @@ final public class FitFieldTime: FieldWrapper {
                 let value = FitTime.decode(data: data,
                                            base: base,
                                            arch: owner?.architecture ?? .little,
-										   isLocal: local)
+                                           isLocal: self.local)
                 return value
             }
 
