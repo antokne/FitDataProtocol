@@ -42,13 +42,13 @@ public struct FitTime {
             self.secondSincePowerUp = TimeInterval(time)
             self.isLocal = false
         } else {
-            if isLocal {
-                self.recordDate = Date(timeInterval: TimeInterval(time), since: Date.localAntEPOCH)
-                self.isLocal = isLocal
-            } else {
+//            if isLocal {
+//                self.recordDate = Date(timeInterval: TimeInterval(time), since: Date.localAntEPOCH)
+//                self.isLocal = isLocal
+//            } else {
                 self.recordDate = Date(timeInterval: TimeInterval(time), since: Date.antEPOCH)
                 self.isLocal = false
-            }
+//            }
         }
     }
 
@@ -74,13 +74,13 @@ internal extension FitTime {
 
         if let recordDate = recordDate {
 
-            if isLocal {
-                let time = UInt32(recordDate.timeIntervalSince(Date.localAntEPOCH))
-                msgData.append(Data(from: time.littleEndian))
-            } else {
+//            if isLocal {
+//                let time = UInt32(recordDate.timeIntervalSince(Date.localAntEPOCH))
+//                msgData.append(Data(from: time.littleEndian))
+//            } else {
                 let time = UInt32(recordDate.timeIntervalSince(Date.antEPOCH))
                 msgData.append(Data(from: time.littleEndian))
-            }
+//            }
             
         } else if let seconds = secondSincePowerUp {
             let time = UInt32(seconds)
