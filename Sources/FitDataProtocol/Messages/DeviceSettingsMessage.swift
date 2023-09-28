@@ -39,19 +39,19 @@ open class DeviceSettingsMessage: FitMessage {
     /// Used in the Timezone array to get the offset
     @FitField(base: BaseTypeData(type: .uint8, resolution: Resolution(scale: 1.0, offset: 0.0)),
               fieldNumber: 0)
-    private var activeTimeZone: UInt8?
+	private(set) public var activeTimeZone: UInt8?
     
     /// UTC Offset
     ///
     /// Offset from system time. Required to convert timestamp from system time to UTC
     @FitField(base: BaseTypeData(type: .uint32, resolution: Resolution(scale: 1.0, offset: 0.0)),
               fieldNumber: 1)
-    private var utcOffset: UInt32?
+	private(set) public var utcOffset: UInt32?
     
     /// Offset from system time in seconds
     @FitField(base: BaseTypeData(type: .uint32, resolution: Resolution(scale: 1.0, offset: 0.0)),
               fieldNumber: 2)
-    private var timeOffset: Data?
+	private(set) public var timeOffset: Data?
     
     /// Time Mode
     @FitField(base: BaseTypeData(type: .enumtype, resolution: Resolution(scale: 1.0, offset: 0.0)),
